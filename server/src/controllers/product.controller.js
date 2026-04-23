@@ -104,6 +104,16 @@ const deleteProduct = async (req, res) => {
       return res.status(404).json({ message: "Producto no encontrado" });
     }
 
+    const orderItemsCount = await prisma.orderItem.count({
+      where: { productId: id }
+    });
+
+    if (orderItemsCount > 0) {
+      return res.status(409).json({
+        message: "No se puede eliminar un producto con historial de compras"
+      });
+    }
+
     await prisma.product.delete({
       where: { id }
     });
@@ -111,6 +121,13 @@ const deleteProduct = async (req, res) => {
     res.json({ message: "Producto eliminado correctamente" });
   } catch (error) {
     console.error("Error al eliminar producto:", error);
+
+    if (error?.code === "P2003") {
+      return res.status(409).json({
+        message: "No se puede eliminar un producto relacionado con otras entidades"
+      });
+    }
+
     res.status(500).json({ message: "Error interno del servidor" });
   }
 };
