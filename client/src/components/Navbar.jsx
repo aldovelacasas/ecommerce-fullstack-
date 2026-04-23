@@ -39,6 +39,11 @@ function Navbar() {
         <Link className="nav-link" to="/" onClick={closeMenu}>Inicio</Link>
         <Link className="nav-link" to="/#quienes-somos" onClick={closeMenu}>Quienes somos</Link>
         <Link className="nav-link" to="/products" onClick={closeMenu}>Productos</Link>
+        {user && (
+          <Link className="nav-link" to="/orders" onClick={closeMenu}>
+            Mis compras
+          </Link>
+        )}
 
         {user && (
           <Link
