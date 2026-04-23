@@ -70,7 +70,9 @@ function Admin() {
 
       await loadProducts();
     } catch (err) {
-      setError(err.message || "Error al eliminar el producto");
+      const message = err.message || "Error al eliminar el producto";
+      setError(message);
+      window.alert(message);
     }
   };
 
