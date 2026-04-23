@@ -15,7 +15,12 @@ function Navbar() {
   return (
     <header className="navbar">
       <Link className="navbar__logo" to="/">
-        Mi Ecommerce
+        <img
+          src="/cart-delivery.gif"
+          alt="Carrito de entrega"
+          className="navbar__logo-gif"
+        />
+        <span>Mi Ecommerce</span>
       </Link>
 
       <button

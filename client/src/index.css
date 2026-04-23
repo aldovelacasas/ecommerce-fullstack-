@@ -292,6 +292,9 @@ button:hover,
 }
 
 .navbar__logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   font-family: "Space Grotesk", sans-serif;
   font-size: 1.2rem;
   font-weight: 700;
@@ -299,6 +302,14 @@ button:hover,
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+}
+
+.navbar__logo-gif {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  object-fit: cover;
+  box-shadow: 0 4px 10px rgba(18, 40, 78, 0.15);
 }
 
 .navbar__nav {
