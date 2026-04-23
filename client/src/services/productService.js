@@ -12,6 +12,15 @@ const getAuthHeaders = () => {
     : {};
 };
 
+const getErrorMessage = async (response, fallbackMessage) => {
+  try {
+    const data = await response.json();
+    return data?.message || fallbackMessage;
+  } catch (error) {
+    return fallbackMessage;
+  }
+};
+
 export const getProducts = async () => {
   const response = await fetch(API_URL);
 
@@ -33,7 +42,7 @@ export const createProduct = async (productData) => {
   });
 
   if (!response.ok) {
-    throw new Error("No se pudo crear el producto");
+    throw new Error(await getErrorMessage(response, "No se pudo crear el producto"));
   }
 
   return response.json();
@@ -50,7 +59,7 @@ export const updateProduct = async (id, productData) => {
   });
 
   if (!response.ok) {
-    throw new Error("No se pudo actualizar el producto");
+    throw new Error(await getErrorMessage(response, "No se pudo actualizar el producto"));
   }
 
   return response.json();
@@ -65,7 +74,7 @@ export const deleteProduct = async (id) => {
   });
 
   if (!response.ok) {
-    throw new Error("No se pudo eliminar el producto");
+    throw new Error(await getErrorMessage(response, "No se pudo eliminar el producto"));
   }
 
   return response.json();

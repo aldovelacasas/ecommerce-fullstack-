@@ -44,7 +44,7 @@ function Admin() {
 
       await loadProducts();
     } catch (err) {
-      setError("Error al guardar el producto");
+      setError(err.message || "Error al guardar el producto");
     }
   };
 
@@ -70,7 +70,7 @@ function Admin() {
 
       await loadProducts();
     } catch (err) {
-      setError("Error al eliminar el producto");
+      setError(err.message || "Error al eliminar el producto");
     }
   };
 
