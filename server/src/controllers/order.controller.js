@@ -1,20 +1,20 @@
 const prisma = require("../lib/prisma");
 
+const STOCK_CONFLICT_PREFIX = "STOCK_CONFLICT:";
+
 const checkout = async (req, res) => {
   try {
     const userId = req.user.userId ?? req.user.id;
 
-    // Obtener items del carrito
     const cartItems = await prisma.cartItem.findMany({
       where: { userId },
       include: { product: true }
     });
 
     if (cartItems.length === 0) {
-      return res.status(400).json({ message: "El carrito está vacío" });
+      return res.status(400).json({ message: "El carrito esta vacio" });
     }
 
-    // Validar stock
     for (const item of cartItems) {
       if (item.product.stock < item.quantity) {
         return res.status(400).json({
@@ -23,12 +23,9 @@ const checkout = async (req, res) => {
       }
     }
 
-    // Calcular total
     const total = cartItems.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
 
-    // Crear orden en transacción
     const result = await prisma.$transaction(async (tx) => {
-      // Crear orden
       const order = await tx.order.create({
         data: {
           userId,
@@ -36,38 +33,61 @@ const checkout = async (req, res) => {
         }
       });
 
-      // Crear orderItems y descontar stock
+      await tx.orderItem.createMany({
+        data: cartItems.map((item) => ({
+          orderId: order.id,
+          productId: item.productId,
+          quantity: item.quantity,
+          price: item.product.price
+        }))
+      });
+
       for (const item of cartItems) {
-        await tx.orderItem.create({
+        const updated = await tx.product.updateMany({
+          where: {
+            id: item.productId,
+            stock: { gte: item.quantity }
+          },
           data: {
-            orderId: order.id,
-            productId: item.productId,
-            quantity: item.quantity,
-            price: item.product.price
+            stock: { decrement: item.quantity }
           }
         });
 
-        await tx.product.update({
-          where: { id: item.productId },
-          data: { stock: { decrement: item.quantity } }
-        });
+        if (updated.count === 0) {
+          throw new Error(`${STOCK_CONFLICT_PREFIX}${item.product.name}`);
+        }
       }
 
-      // Vaciar carrito
       await tx.cartItem.deleteMany({
         where: { userId }
       });
 
       return order;
+    }, {
+      // Remote DB may exceed default 5s interactive transaction timeout.
+      maxWait: 10000,
+      timeout: 30000
     });
 
     res.status(201).json({
       message: "Compra realizada exitosamente",
       order: result
     });
-
   } catch (error) {
     console.error("Error en checkout:", error);
+
+    if (typeof error?.message === "string" && error.message.startsWith(STOCK_CONFLICT_PREFIX)) {
+      return res.status(400).json({
+        message: `Stock insuficiente para ${error.message.slice(STOCK_CONFLICT_PREFIX.length)}`
+      });
+    }
+
+    if (error?.code === "P2028" || error?.code === "P1017") {
+      return res.status(503).json({
+        message: "La conexion con la base de datos esta lenta. Intenta de nuevo."
+      });
+    }
+
     res.status(500).json({ message: "Error interno del servidor" });
   }
 };
@@ -88,7 +108,7 @@ const getUserOrders = async (req, res) => {
 
     res.json(orders);
   } catch (error) {
-    console.error("Error al obtener órdenes:", error);
+    console.error("Error al obtener ordenes:", error);
     res.status(500).json({ message: "Error interno del servidor" });
   }
 };
